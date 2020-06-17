@@ -12,6 +12,12 @@ ssh-keygen -y -f $HOME/Downloads/pem/openrmf.pem > $HOME/Downloads/pem/openrmf.p
 
 ## Initialization
 
+* Copy the variable example file.
+
+```bash
+cp variables.tf.example variables.tf
+```
+
 * Setup `variables.tf`. Make sure to update these variables:
     * pki_private_key
     * aws_profile
@@ -25,8 +31,16 @@ terraform init
 terraform apply
 ```
 
-* Ansible
+* Visit the Keycloak web page.
 
 ```bash
-./run-playbook.sh
+./open-keycloak-page.sh
+```
+
+## Problem
+
+When I click on 'Administration Console', I see an error message saying:
+
+```
+HTTPS Required
 ```

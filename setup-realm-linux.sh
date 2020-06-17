@@ -1,6 +1,5 @@
 #!/bin/bash
 
-KEYCLOAK_IP=$(curl http://169.254.169.254/latest/meta-data/public-ipv4)
 RMF_ADMIN_USER=${RMF_ADMIN_USER:-rmf-admin}
 
 type jq > /dev/null
@@ -24,6 +23,8 @@ echo "Discovering local Keycloak Docker Container..."
 keycontainer="$(docker ps | grep "jboss/keycloak:" | awk '{ print $1 }')"
 echo "keycontainer: $keycontainer"
 ##END Locate Keycloak Container ID
+
+KEYCLOAK_IP=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $keycontainer)
 
 ##BEGIN Authenticate to Keycloak server
 echo

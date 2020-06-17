@@ -1,5 +1,5 @@
 ---
-- hosts: openrmf
+- hosts: all
   gather_facts: false
   become: yes
 
@@ -100,14 +100,17 @@
         mode: 0755
 
     - name: Pull keycloak images
-      command: docker-compose pull
+      command: /usr/local/bin/docker-compose pull
       args:
         chdir: /data/keycloak
 
     - name: Start keycloak images
-      command: docker-compose up --detach
+      command: /usr/local/bin/docker-compose up --detach
       args:
         chdir: /data/keycloak
+
+    - pause:
+        seconds: 45
 
     - name: Provision keycloak realm
       become: yes

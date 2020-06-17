@@ -36,12 +36,19 @@ resource "aws_instance" "openrmf" {
     ]  
   }
 
+  provisioner "local-exec" {
+    command = "ansible-playbook -u ${var.ssh_user} -i '${self.public_ip},' --private-key ${var.pki_private_key} playbook.openrmf.yml" 
+    environment = {
+      ANSIBLE_HOST_KEY_CHECKING = "False"
+    }
+  }
+
   tags = {
     Name = "openrmf"
   }
 }
 
 resource "local_file" "inventory" {
-  content = "[openrmf]\n${aws_instance.openrmf.public_ip}"
+  content = "[all]\n${aws_instance.openrmf.public_ip}"
   filename = "${path.module}/inventory"
 }
