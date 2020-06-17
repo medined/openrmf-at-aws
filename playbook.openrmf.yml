@@ -141,3 +141,8 @@
     #
     - pause:
         seconds: 45
+
+    - name: Start openrmf containers
+      command: /usr/local/bin/docker-compose up --detach
+      args:
+        chdir: /data/openrmf

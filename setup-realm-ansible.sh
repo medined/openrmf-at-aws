@@ -3,6 +3,13 @@
 LOG_FILE=$(basename $0).log
 exec > >(tee ${LOG_FILE}) 2>&1
 
+#
+# This is the IP address of the server running the docker
+# containers.
+# 
+HOST_IP=$(curl http://169.254.169.254/latest/meta-data/public-ipv4)
+echo "HOST_IP: $HOST_IP"
+
 RMF_ADMIN_USER=${RMF_ADMIN_USER:-rmf-admin}
 
 if [ -z $RMF_ADMIN_PASSWORD ]; then
@@ -37,8 +44,8 @@ dbcontainer="$(docker ps | grep "postgres:" | awk '{ print $1 }')"
 echo "dbcontainer: $dbcontainer"
 ##END Locate Keycloak Container ID
 
-
 KEYCLOAK_IP=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $keycontainer)
+echo "KEYCLOAK_IP: $KEYCLOAK_IP"
 
 ##BEGIN Authenticate to Keycloak server
 echo
@@ -74,7 +81,15 @@ RESPONSE=$(docker exec -i $keycontainer /opt/jboss/keycloak/bin/kcadm.sh get cli
 cid=$(echo $RESPONSE | /usr/local/bin/jq --raw-output '.[0].id')
 if [ -z $cid ] || [ $cid == "null" ]; then
   echo "Creating client"
-  cid=$(docker exec -i $keycontainer /opt/jboss/keycloak/bin/kcadm.sh create clients -r openrmf -s enabled=true -s clientId=openrmf -s publicClient=true -s 'description=openrmf login for Web and APIs' -s 'redirectUris=["http://'$KEYCLOAK_IP':8080/*"]' -s 'webOrigins=["*"]' -i)
+  cid=$(docker exec -i $keycontainer \
+    /opt/jboss/keycloak/bin/kcadm.sh create clients \
+      -r openrmf \
+      -s enabled=true \
+      -s clientId=openrmf \
+      -s publicClient=true \
+      -s 'description=openrmf login for Web and APIs' \
+      -s "redirectUris=[\"http://$HOST_IP:8080/*\"]" \
+      -s 'webOrigins=["*"]' -i)
 else
   echo "Client exists"
 fi
@@ -126,6 +141,15 @@ echo "Turn of UPDATE_PASSWORD for RMF admin user."
 RESPONSE=$(docker exec -i $keycontainer /opt/jboss/keycloak/bin/kcadm.sh get users --target-realm openrmf -q username=$RMF_ADMIN_USER 2>/dev/null)
 RMF_ADMIN_USER_ID=$(echo $RESPONSE | /usr/local/bin/jq --raw-output '.[0].id')
 
+echo
+echo "Turn off SSL requirement for the realm."
+docker exec -i $keycontainer  \
+  /opt/jboss/keycloak/bin/kcadm.sh update \
+    realms/openrmf \
+    --set 'sslRequired=none'
+
+echo
+echo "Turn off Update Password For RMF admin user"
 docker exec -i $keycontainer  \
   /opt/jboss/keycloak/bin/kcadm.sh update \
     users/$RMF_ADMIN_USER_ID \
@@ -140,6 +164,7 @@ docker exec -i $keycontainer  \
     --username $RMF_ADMIN_USER \
     --new-password "$RMF_ADMIN_PASSWORD"
 
+
 #
 # This script does not support http. So we need to tell that
 # to keycloak.
@@ -151,7 +176,14 @@ docker exec $dbcontainer \
     --host localhost \
     --dbname=keycloak \
     --username keycloak \
-    --command="update REALM set ssl_required='NONE' where id = 'master';"
+    --command="update REALM set ssl_required='NONE' where id = 'master' or id = '$RMF_ADMIN_USER_ID';"
+
+echo
+echo "Create env file for openrmf compose."
+cat <<EOF > /data/openrmf/.env
+JWT-AUTHORITY=http://$KEYCLOAK_IP:9001/auth/realms/openrmf
+JWT-CLIENT=openrmf
+EOF
 
 echo
 echo "Complete."
