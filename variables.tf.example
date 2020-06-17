@@ -1,0 +1,39 @@
+variable "ami" {
+  default = "ami-09d95fab7fff3776c"
+}
+
+variable "aws_profile" {
+  default = "XXXX"
+}
+
+variable "aws_region" {
+  default = "us-east-1"
+}
+
+variable "instance_type" {
+  default = "t3.medium"
+}
+
+variable "pki_private_key" {
+  default = "openrmf.pem"
+}
+
+variable "pki_public_key" {
+  default = "openrmf.pub"
+}
+
+variable "ssh_cidr_block" {
+  default = "0.0.0.0/0"
+}
+
+variable "ssh_user" {
+  default = "ec2-user"
+}
+
+variable "subnet_id" {
+  default = "subnet-XXXX"
+}
+
+variable "vpc_id" {
+  default = "vpc-XXXX"
+}

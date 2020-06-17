@@ -1,0 +1,9 @@
+.terraform
+inventory
+ip_address.txt
+terraform.tfstate
+terraform.tfstate.backup
+variables.tf
+venv
+*.pem
+*.pub
