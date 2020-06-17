@@ -19,8 +19,9 @@ cp variables.tf.example variables.tf
 ```
 
 * Setup `variables.tf`. Make sure to update these variables:
-    * pki_private_key
     * aws_profile
+    * pki_private_key
+    * rmf_admin_password
     * subnet_id
     * vpc_id
 
@@ -35,12 +36,4 @@ terraform apply
 
 ```bash
 ./open-keycloak-page.sh
-```
-
-## Problem
-
-When I click on 'Administration Console', I see an error message saying:
-
-```
-HTTPS Required
 ```

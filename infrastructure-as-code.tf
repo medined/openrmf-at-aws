@@ -37,7 +37,7 @@ resource "aws_instance" "openrmf" {
   }
 
   provisioner "local-exec" {
-    command = "ansible-playbook -u ${var.ssh_user} -i '${self.public_ip},' --private-key ${var.pki_private_key} playbook.openrmf.yml" 
+    command = "ansible-playbook --extra-vars \"rmf_admin_password=${var.rmf_admin_password}\" -u ${var.ssh_user} -i '${self.public_ip},' --private-key ${var.pki_private_key} playbook.openrmf.yml" 
     environment = {
       ANSIBLE_HOST_KEY_CHECKING = "False"
     }

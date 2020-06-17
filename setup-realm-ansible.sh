@@ -1,11 +1,12 @@
 #!/bin/bash
 
+LOG_FILE=$(basename $0).log
+exec > >(tee ${LOG_FILE}) 2>&1
+
 RMF_ADMIN_USER=${RMF_ADMIN_USER:-rmf-admin}
 
-type jq > /dev/null
-if [ $? != 0 ]; then
-  echo "Please install jq from https://stedolan.github.io/jq/."
-  echo "  jq is needed to parse JSON."
+if [ -z $RMF_ADMIN_PASSWORD ]; then
+  echo "Please set the RMF_ADMIN_PASSWORD env variable."
   exit
 fi
 
@@ -15,14 +16,27 @@ fi
 
 #
 # NOTE: It is expected that only one keyclock container is running.
+# NOTE: The 'jq' utility is needed.
 #
 
 ##BEGIN Locate Keycloak Container ID
+#
+# Using the container name is not helpful when searching because the
+# first part of the name is based on the starting folder. For 
+# example, "keycloak_keycloak_1" starts in /data/keycloak.
+# 
 echo
 echo "Discovering local Keycloak Docker Container..."
 keycontainer="$(docker ps | grep "jboss/keycloak:" | awk '{ print $1 }')"
 echo "keycontainer: $keycontainer"
 ##END Locate Keycloak Container ID
+
+echo
+echo "Discovering local postgres Docker Container..."
+dbcontainer="$(docker ps | grep "postgres:" | awk '{ print $1 }')"
+echo "dbcontainer: $dbcontainer"
+##END Locate Keycloak Container ID
+
 
 KEYCLOAK_IP=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $keycontainer)
 
@@ -56,10 +70,13 @@ docker exec $keycontainer /opt/jboss/keycloak/bin/kcadm.sh create roles -r openr
 
 ##BEGIN Create Client
 echo
-echo "Creating client"
-cid=$(docker exec -i $keycontainer /opt/jboss/keycloak/bin/kcadm.sh get clients -r openrmf -q clientId=openrmf 2>/dev/null | jq --raw-output '.[0].id')
-if [ -z $cid ]; then
+RESPONSE=$(docker exec -i $keycontainer /opt/jboss/keycloak/bin/kcadm.sh get clients -r openrmf -q clientId=openrmf 2>/dev/null)
+cid=$(echo $RESPONSE | /usr/local/bin/jq --raw-output '.[0].id')
+if [ -z $cid ] || [ $cid == "null" ]; then
+  echo "Creating client"
   cid=$(docker exec -i $keycontainer /opt/jboss/keycloak/bin/kcadm.sh create clients -r openrmf -s enabled=true -s clientId=openrmf -s publicClient=true -s 'description=openrmf login for Web and APIs' -s 'redirectUris=["http://'$KEYCLOAK_IP':8080/*"]' -s 'webOrigins=["*"]' -i)
+else
+  echo "Client exists"
 fi
 echo "Client ID: $cid"
 ##END Create Client
@@ -98,8 +115,43 @@ docker exec -i $keycontainer /opt/jboss/keycloak/bin/kcadm.sh update realms/open
 
 ##BEGIN Add Reader Role to Default Realm Roles
 echo
-echo "Last step - Adding Reader Role to Default Realm Roles..."
+echo "Adding Reader Role to Default Realm Roles..."
 docker exec -i $keycontainer /opt/jboss/keycloak/bin/kcadm.sh update realms/openrmf -f - <<EOF
 {"defaultRoles" :["offline_access", "uma_authorization", "Reader"]}
 EOF
 ##END Add Reader Role to Default Realm Roles
+
+echo
+echo "Turn of UPDATE_PASSWORD for RMF admin user."
+RESPONSE=$(docker exec -i $keycontainer /opt/jboss/keycloak/bin/kcadm.sh get users --target-realm openrmf -q username=$RMF_ADMIN_USER 2>/dev/null)
+RMF_ADMIN_USER_ID=$(echo $RESPONSE | /usr/local/bin/jq --raw-output '.[0].id')
+
+docker exec -i $keycontainer  \
+  /opt/jboss/keycloak/bin/kcadm.sh update \
+    users/$RMF_ADMIN_USER_ID \
+    --target-realm openrmf \
+    --set 'requiredActions=[]'
+
+echo
+echo "Set RMF admin user password."
+docker exec -i $keycontainer  \
+  /opt/jboss/keycloak/bin/kcadm.sh set-password \
+    --target-realm openrmf \
+    --username $RMF_ADMIN_USER \
+    --new-password "$RMF_ADMIN_PASSWORD"
+
+#
+# This script does not support http. So we need to tell that
+# to keycloak.
+# 
+echo
+echo "Unset https requirement."
+docker exec $dbcontainer \
+  psql \
+    --host localhost \
+    --dbname=keycloak \
+    --username keycloak \
+    --command="update REALM set ssl_required='NONE' where id = 'master';"
+
+echo
+echo "Complete."

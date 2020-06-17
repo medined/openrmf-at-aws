@@ -95,8 +95,8 @@
 
     - name: Copy keycloak initialization script.
       copy:
-        src: setup-realm-linux.sh
-        dest: /data/keycloak/setup-realm-linux.sh
+        src: setup-realm-ansible.sh
+        dest: /data/keycloak/setup-realm-ansible.sh
         mode: 0755
 
     - name: Pull keycloak images
@@ -104,16 +104,40 @@
       args:
         chdir: /data/keycloak
 
-    - name: Start keycloak images
+    - name: Start keycloak containers
       command: /usr/local/bin/docker-compose up --detach
       args:
         chdir: /data/keycloak
 
+    #
+    # Pause to let the servers start.
+    #
     - pause:
         seconds: 45
 
     - name: Provision keycloak realm
       become: yes
-      command: ./setup-realm-linux.sh
+      command: ./setup-realm-ansible.sh
       args:
         chdir: /data/keycloak
+      environment:
+        RMF_ADMIN_PASSWORD: "{{ rmf_admin_password }}"
+
+    #
+    # Restart the containers in case the database has changed.
+    #
+    - name: Stop keycloak containers
+      command: /usr/local/bin/docker-compose down
+      args:
+        chdir: /data/keycloak
+
+    - name: Start keycloak containers
+      command: /usr/local/bin/docker-compose up --detach
+      args:
+        chdir: /data/keycloak
+
+    #
+    # Pause to let the servers start.
+    #
+    - pause:
+        seconds: 45

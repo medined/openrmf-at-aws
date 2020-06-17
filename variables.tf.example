@@ -22,6 +22,15 @@ variable "pki_public_key" {
   default = "openrmf.pub"
 }
 
+#
+# I'd be leery of using a dollar sign
+# in the password for fears of breaking some
+# bash script.
+#
+variable "rmf_admin_password" {
+  default = "PassworldRed123@@"
+}
+
 variable "ssh_cidr_block" {
   default = "0.0.0.0/0"
 }
