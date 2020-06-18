@@ -14,6 +14,10 @@ variable "instance_type" {
   default = "t3.medium"
 }
 
+variable "keycloak_admin_password" {
+  default = "XXXXXXXXX"
+}
+
 variable "pki_private_key" {
   default = "openrmf.pem"
 }
@@ -28,7 +32,7 @@ variable "pki_public_key" {
 # bash script.
 #
 variable "rmf_admin_password" {
-  default = "PassworldRed123@@"
+  default = "XXXXXXXXXX"
 }
 
 variable "ssh_cidr_block" {

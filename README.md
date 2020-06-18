@@ -6,6 +6,12 @@ See **Caution** section below.
 
 2020-Jun-18 - The project is based on OpenRMF Core OSS 1.0.
 
+## Security
+
+When provisioning the server, the RMF Admin password will be displayed in the output.
+
+Please manually change the admin password for keycloak. It is hardcoded in the OpenRMF project.
+
 ## Links
 
 * https://www.openrmf.io/
