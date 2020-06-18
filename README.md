@@ -2,6 +2,10 @@
 
 This project provisions an EC2 server with the OpenRMF software running on it.
 
+See **Caution** section below.
+
+2020-Jun-18 - The project is based on OpenRMF Core OSS 1.0.
+
 ## Links
 
 * https://www.openrmf.io/
@@ -53,3 +57,8 @@ terraform apply
 ```bash
 ./open-openrmf-page.sh
 ```
+
+## Caution
+
+In order to make this automation work, I needed to provide my own versions of two files. These are `setup-realm-linux.sh` and `docker-compose.yml` from the OpenRMF zip file. This makes this project brittle.
+

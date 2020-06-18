@@ -10,7 +10,6 @@
   tasks:
 
     - name: upgrade all packages
-      become: yes
       yum:
         name: '*'
         state: latest
@@ -18,7 +17,6 @@
         ansible_python_interpreter: /usr/bin/python
 
     - name: install packages
-      become: yes
       yum:
         state: latest
         name: docker
@@ -40,7 +38,6 @@
       register: machine_name
 
     - name: Download docker-compose
-      become: yes
       get_url:
         dest: /usr/local/bin/docker-compose
         url: "https://github.com/docker/compose/releases/latest/download/docker-compose-{{kernel_name.stdout}}-{{machine_name.stdout}}"
@@ -53,14 +50,12 @@
         append: yes
 
     - name: Download keycloak
-      become: yes
       get_url:
         dest: /usr/local/bin/jq
         url: https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64
         mode: 0755
 
     - name: Creates data directory
-      become: yes
       file: 
         group: "{{ ssh_user }}"
         owner: "{{ ssh_user }}"
@@ -95,7 +90,7 @@
 
     - name: Copy keycloak initialization script.
       copy:
-        src: setup-realm-ansible.sh
+        src: remote-setup-realm-ansible.sh
         dest: /data/keycloak/setup-realm-ansible.sh
         mode: 0755
 
@@ -116,7 +111,6 @@
         seconds: 45
 
     - name: Provision keycloak realm
-      become: yes
       command: ./setup-realm-ansible.sh
       args:
         chdir: /data/keycloak
@@ -142,6 +136,11 @@
     - pause:
         seconds: 45
 
+    - name: Copy keycloak initialization script.
+      copy:
+        src: remove-openrmf-docker-compose.yml
+        dest: /data/openrmf/docker-compose.yml
+        
     - name: Start openrmf containers
       command: /usr/local/bin/docker-compose up --detach
       args:

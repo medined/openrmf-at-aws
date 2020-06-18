@@ -4,6 +4,7 @@
 provider "aws" {
   region  = var.aws_region
   profile = var.aws_profile
+  version = "~> 2.66"
 }
 
 resource "aws_key_pair" "openrmf" {
@@ -22,27 +23,6 @@ resource "aws_instance" "openrmf" {
     aws_security_group.allow_keycloak.id,
     aws_security_group.allow_openrmf.id
   ]
-
-  connection {
-    type        = "ssh"
-    user        = var.ssh_user
-    private_key = file(var.pki_private_key)
-    host        = self.public_ip
-  }
-
-  provisioner "remote-exec" {
-    inline = [
-      "sudo yum install -y python3"
-    ]  
-  }
-
-  provisioner "local-exec" {
-    command = "ansible-playbook --extra-vars \"rmf_admin_password=${var.rmf_admin_password}\" -u ${var.ssh_user} -i '${self.public_ip},' --private-key ${var.pki_private_key} playbook.openrmf.yml" 
-    environment = {
-      ANSIBLE_HOST_KEY_CHECKING = "False"
-    }
-  }
-
   tags = {
     Name = "openrmf"
   }
@@ -51,9 +31,32 @@ resource "aws_instance" "openrmf" {
 resource "aws_eip" "openrmf" {
   instance = aws_instance.openrmf.id
   vpc      = true
+  tags = {
+    Name = "openrmf"
+  }
+  connection {
+    type        = "ssh"
+    user        = var.ssh_user
+    private_key = file(var.pki_private_key)
+    host        = self.public_ip
+  }
+  provisioner "remote-exec" {
+    inline = [
+      "sudo yum install -y python3"
+    ]  
+  }
+  provisioner "local-exec" {
+    command = "ansible-playbook --extra-vars \"rmf_admin_password=${var.rmf_admin_password}\" -u ${var.ssh_user} -i '${self.public_ip},' --private-key ${var.pki_private_key} playbook.openrmf.yml" 
+    environment = {
+      ANSIBLE_HOST_KEY_CHECKING = "False"
+    }
+  }
 }
 
+#
+# We need to export the EIP ip address, not the instance's.
+#
 resource "local_file" "inventory" {
-  content = "[all]\n${aws_instance.openrmf.public_ip}"
+  content = "[all]\n${aws_eip.openrmf.public_ip}"
   filename = "${path.module}/inventory"
 }
