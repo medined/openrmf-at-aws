@@ -2,6 +2,10 @@
 
 This project provisions an EC2 server with the OpenRMF software running on it.
 
+## Links
+
+* https://www.openrmf.io/
+
 ## Create PKI Public Key
 
 You'll need an EC2 key pair in order to SSH into the server and to let Ansible run its playbooks. After creating a key pair, generate a public key using the following command:
@@ -32,8 +36,20 @@ terraform init
 terraform apply
 ```
 
+* SSH to the EC2 server.
+
+```bash
+./ssh-to-server.sh
+```
+
 * Visit the Keycloak web page.
 
 ```bash
 ./open-keycloak-page.sh
+```
+
+* Visit the OpenRMF web page.
+
+```bash
+./open-openrmf-page.sh
 ```

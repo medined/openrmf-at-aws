@@ -48,6 +48,11 @@ resource "aws_instance" "openrmf" {
   }
 }
 
+resource "aws_eip" "openrmf" {
+  instance = aws_instance.openrmf.id
+  vpc      = true
+}
+
 resource "local_file" "inventory" {
   content = "[all]\n${aws_instance.openrmf.public_ip}"
   filename = "${path.module}/inventory"
