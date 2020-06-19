@@ -181,7 +181,7 @@ docker exec $dbcontainer \
 echo
 echo "Create env file for openrmf compose."
 cat <<EOF > /data/openrmf/.env
-JWT-AUTHORITY=http://$KEYCLOAK_IP:9001/auth/realms/openrmf
+JWT-AUTHORITY=http://$HOST_IP:9001/auth/realms/openrmf
 JWT-CLIENT=openrmf
 EOF
 
