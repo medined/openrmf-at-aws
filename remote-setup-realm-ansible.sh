@@ -44,13 +44,10 @@ dbcontainer="$(docker ps | grep "postgres:" | awk '{ print $1 }')"
 echo "dbcontainer: $dbcontainer"
 ##END Locate Keycloak Container ID
 
-KEYCLOAK_IP=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $keycontainer)
-echo "KEYCLOAK_IP: $KEYCLOAK_IP"
-
 ##BEGIN Authenticate to Keycloak server
 echo
 echo "Authenticating to Keycloak Master Realm..."
-docker exec $keycontainer /opt/jboss/keycloak/bin/kcadm.sh config credentials --server http://$KEYCLOAK_IP:8080/auth --realm master --user admin --password admin
+docker exec $keycontainer /opt/jboss/keycloak/bin/kcadm.sh config credentials --server http://$HOST_IP:9001/auth --realm master --user admin --password admin
 ##END Authenticate to Keycloak server
 
 ##BEGIN Create Realm
